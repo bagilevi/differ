@@ -23,6 +23,14 @@ module Differ
     end
     alias :inspect :to_s
 
+    def before
+      @delete
+    end
+
+    def after
+      @insert
+    end
+
     def ==(other)
       self.insert == other.insert && self.delete == other.delete
     end

@@ -70,6 +70,22 @@ module Differ
     def to_s
       @raw.join()
     end
+    
+    def insertions
+      @raw.select{|r| r.is_a? Differ::Change and r.insert?}
+    end
+
+    def deletions
+      @raw.select{|r| r.is_a? Differ::Change and r.delete?}
+    end
+
+    def changes
+      @raw.select{|r| r.is_a? Differ::Change}
+    end
+
+    def changed?
+      @raw.any?{|r| r.is_a? Differ::Change}
+    end
 
     def format_as(f)
       f = Differ.format_for(f)
@@ -82,12 +98,12 @@ module Differ
       end
     end
 
-  protected
+    protected
     def raw_array
       @raw
     end
 
-  private
+    private
     def sep
       "#{$;}"
     end
