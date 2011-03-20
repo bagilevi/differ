@@ -127,7 +127,7 @@ module Differ
     end
 
     def unchanged_length
-      @raw.reject{|r| r.is_a? Differ::Change}.map(&:length).inject(&:+)
+      @raw.reject{|r| r.is_a? Differ::Change}.map(&:length).inject(&:+).to_i
     end
 
     def format_as(f)
