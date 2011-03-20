@@ -226,17 +226,6 @@ describe Differ do
       )
       diff_by_word.should == @expected
     end
-
-    it 'should handle change word to punctuation' do
-      @from = 'menus or normal links'
-      @to = 'menus / normal links'
-      @expected = diff(
-        "menus ",
-        ('or' >> '/'),
-        ' normal links'
-      )
-      diff_by_word.should == @expected
-    end
   end
 
   describe '#diff_by_line' do
@@ -584,7 +573,7 @@ describe Differ do
       HAIKU
       @expected = diff(
         "stallion sinks ", (+'very '), "gently" +
-        "\nslowly", (-","), " ", (+"/ "), "sleeplessly" +
+        "\nslowly", (", ">>" / "), "sleeplessly" +
         "\nfollowing harp", (" flails">>"s")
       )
       diff_combined.should == @expected
