@@ -564,5 +564,20 @@ describe Differ do
       )
       diff_combined.should == @expected
     end
+
+    it 'works for my example' do
+      @to = <<-HAIKU.gsub(/  +|\n\Z/, '')
+        stallion sinks very gently
+        slowly / sleeplessly
+        following harps
+      HAIKU
+      @expected = diff(
+        "stallion sinks ", (+'very '), "gently" +
+        "\nslowly", (", ">>" / "), "sleeplessly" +
+        "\nfollowing harp", (" flails">>"s")
+      )
+      diff_combined.should == @expected
+    end
+
   end
 end

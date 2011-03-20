@@ -14,7 +14,8 @@ module Differ
 
     def sub_diff(d, target, source, separators)
       separators = (separators.is_a?(Array) ? separators : [separators])
-      separator = separators.shift
+      additional_separators = separators.dup
+      separator = additional_separators.shift
       old_sep, $; = $;, separator
 
       target = target.split(separator)
@@ -22,7 +23,7 @@ module Differ
 
       $; = '' if separator.is_a? Regexp
 
-      advance(d, target, source, separators) until source.empty? || target.empty?
+      advance(d, target, source, additional_separators) until source.empty? || target.empty?
       d.insert(*target) || d.delete(*source)
       return d
     ensure
@@ -79,7 +80,7 @@ module Differ
           sub_d = Diff.new
           sub_diff(sub_d, add, del, additional_separators)
         end
-        if sub_d && sub_d.unchanged_length > del.length / 2
+        if sub_d && sub_d.unchanged_length > del.length * 0.5
           d.merge! sub_d
         else
           if insert && prioritize_insert
@@ -89,10 +90,7 @@ module Differ
           elsif insert && !prioritize_insert
             change(d, :insert, target.unshift(add), insert)
           else
-            if additional_separators.any?
-            else
-              d.insert(add) && d.delete(del)
-            end
+            d.insert(add) && d.delete(del)
           end
         end
       end

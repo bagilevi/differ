@@ -112,9 +112,16 @@ module Differ
 
     def merge_pieces(a, b)
       if a.is_a?(Change) && b.is_a?(Change)
-        a.insert << b.insert
-        a.delete << b.delete
+        if b.insert?
+          a.insert << sep if a.insert?
+          a.insert << b.insert
+        end
+        if b.delete?
+          a.delete << sep if a.delete?
+          a.delete << b.delete
+        end
       else
+        a << sep unless a.empty?
         a << b
       end
     end
