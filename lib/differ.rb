@@ -35,7 +35,7 @@ module Differ
     end
 
     def diff_by_word(to, from)
-      diff(to, from, /\b/)
+      diff(to, from, /([\b ])/)
     end
 
     def diff_by_line(to, from)
@@ -43,7 +43,7 @@ module Differ
     end
 
     def diff_combined(to, from)
-      diff(to, from, ["\n", /\b/, ''])
+      diff(to, from, ["\n", /([\b ])/, ''])
     end
 
     def format=(f)
@@ -70,36 +70,38 @@ module Differ
       del, add = source.shift, target.shift
 
       prioritize_insert = target.length > source.length
-      insert = target.index(del)
-      delete = source.index(add)
+      insert = (target.index(del) unless del =~ /^\s+$/)
+      delete = (source.index(add) unless add =~ /^\s+$/)
 
       if del == add
         d.same(add)
       else
-        sub_d = if additional_separators.any?
-          sub_d = Diff.new
-          sub_diff(sub_d, add, del, additional_separators)
-        end
-        if sub_d && sub_d.unchanged_length > del.length * 0.5
-          d.merge! sub_d
+        if insert && prioritize_insert
+          change(d, :insert, target.unshift(add), insert)
+        elsif delete
+          change(d, :delete, source.unshift(del), delete)
+        elsif insert && !prioritize_insert
+          change(d, :insert, target.unshift(add), insert)
         else
-          if insert && prioritize_insert
-            change(d, :insert, target.unshift(add), insert)
-          elsif delete
-            change(d, :delete, source.unshift(del), delete)
-          elsif insert && !prioritize_insert
-            change(d, :insert, target.unshift(add), insert)
+          sub_d = if additional_separators.any?
+            sub_d = Diff.new
+            sub_diff(sub_d, add, del, additional_separators)
+          end
+          if sub_d && sub_d.unchanged_length > del.length * 0.5
+            d.merge! sub_d
           else
             d.insert(add) && d.delete(del)
           end
         end
       end
-
     end
 
     def change(d, method, array, index)
       d.send(method, *array.slice!(0..index))
       d.same(array.shift)
+    end
+
+    def next_matching_indexes(target, source)
     end
   end
 end
