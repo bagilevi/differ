@@ -87,6 +87,42 @@ module Differ
       @raw.any?{|r| r.is_a? Differ::Change}
     end
 
+    def pieces
+      @raw
+    end
+
+    def merge!(other_diff)
+      other_diff.pieces.each do |piece|
+        self << piece
+      end
+    end
+
+    def <<(piece)
+      if @raw.empty? || !mergeable?(@raw.last, piece)
+        @raw << piece
+      else
+        last_piece = @raw.last
+        merge_pieces(last_piece, piece)
+      end
+    end
+
+    def mergeable?(a, b)
+      (a.is_a?(Change) && b.is_a?(Change)) || (a.is_a?(String) && b.is_a?(String))
+    end
+
+    def merge_pieces(a, b)
+      if a.is_a?(Change) && b.is_a?(Change)
+        a.insert << b.insert
+        a.delete << b.delete
+      else
+        a << b
+      end
+    end
+
+    def unchanged_length
+      @raw.reject{|r| r.is_a? Differ::Change}.map(&:length).inject(&:+)
+    end
+
     def format_as(f)
       f = Differ.format_for(f)
       @raw.inject('') do |sum, part|

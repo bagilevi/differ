@@ -509,4 +509,60 @@ describe Differ do
       diff_by_line.should == @expected
     end
   end
+
+  describe '#diff_combined' do
+    def diff_combined
+      Differ.send(:diff_combined, @to, @from)
+    end
+
+    before(:each) do
+      @to = @from = <<-HAIKU.gsub(/  +|\n\Z/, '')
+        stallion sinks gently
+        slowly, sleeplessly
+        following harp flails
+      HAIKU
+    end
+
+    it 'should do diffs by line if there are many differences' do
+      @to = <<-HAIKU.gsub(/  +|\n\Z/, '')
+        six little robots
+        slowly, sleeplessly
+        following harp flails
+      HAIKU
+      @expected = diff(
+        ('stallion sinks gently' >> 'six little robots'),
+        "\nslowly, sleeplessly" +
+        "\nfollowing harp flails"
+      )
+      diff_combined.should == @expected
+    end
+
+    it 'should do diffs by line then words if there are not many differences' do
+      @to = <<-HAIKU.gsub(/  +|\n\Z/, '')
+        stallion falls gently
+        slowly, sleeplessly
+        following harp flails
+      HAIKU
+      @expected = diff(
+        "stallion ", ('sinks' >> 'falls'), " gently" +
+        "\nslowly, sleeplessly" +
+        "\nfollowing harp flails"
+      )
+      diff_combined.should == @expected
+    end
+
+    it 'should do diffs by line then words then chars if there are just a few char differences' do
+      @to = <<-HAIKU.gsub(/  +|\n\Z/, '')
+        stallion sinked gently
+        slowly, sleeplessly
+        following harp flails
+      HAIKU
+      @expected = diff(
+        "stallion sink", ('s' >> 'ed'), " gently" +
+        "\nslowly, sleeplessly" +
+        "\nfollowing harp flails"
+      )
+      diff_combined.should == @expected
+    end
+  end
 end

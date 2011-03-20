@@ -7,7 +7,14 @@ require 'differ/format/html'
 module Differ
   class << self
 
-    def diff(target, source, separator = "\n")
+    def diff(target, source, separators = ["\n"])
+      d = Diff.new
+      return sub_diff(d, target, source, separators)
+    end
+
+    def sub_diff(d, target, source, separators)
+      separators = (separators.is_a?(Array) ? separators : [separators])
+      separator = separators.shift
       old_sep, $; = $;, separator
 
       target = target.split(separator)
@@ -15,10 +22,9 @@ module Differ
 
       $; = '' if separator.is_a? Regexp
 
-      @diff = Diff.new
-      advance(target, source) until source.empty? || target.empty?
-      @diff.insert(*target) || @diff.delete(*source)
-      return @diff
+      advance(d, target, source, separators) until source.empty? || target.empty?
+      d.insert(*target) || d.delete(*source)
+      return d
     ensure
       $; = old_sep
     end
@@ -33,6 +39,10 @@ module Differ
 
     def diff_by_line(to, from)
       diff(to, from, "\n")
+    end
+
+    def diff_combined(to, from)
+      diff(to, from, ["\n", /\b/, ''])
     end
 
     def format=(f)
@@ -55,7 +65,7 @@ module Differ
     end
 
   private
-    def advance(target, source)
+    def advance(d, target, source, additional_separators = [])
       del, add = source.shift, target.shift
 
       prioritize_insert = target.length > source.length
@@ -63,21 +73,38 @@ module Differ
       delete = source.index(add)
 
       if del == add
-        @diff.same(add)
-      elsif insert && prioritize_insert
-        change(:insert, target.unshift(add), insert)
-      elsif delete
-        change(:delete, source.unshift(del), delete)
-      elsif insert && !prioritize_insert
-        change(:insert, target.unshift(add), insert)
+        d.same(add)
       else
-        @diff.insert(add) && @diff.delete(del)
+        sub_d = if additional_separators.any?
+          sub_d = Diff.new
+          sub_diff(sub_d, add, del, additional_separators)
+        end
+        if sub_d && sub_d.unchanged_length > del.length / 2
+          d.merge! sub_d
+        else
+          if insert && prioritize_insert
+            change(d, :insert, target.unshift(add), insert)
+          elsif delete
+            change(d, :delete, source.unshift(del), delete)
+          elsif insert && !prioritize_insert
+            change(d, :insert, target.unshift(add), insert)
+          else
+            if additional_separators.any?
+            else
+              d.insert(add) && d.delete(del)
+            end
+          end
+        end
       end
+
     end
 
-    def change(method, array, index)
-      @diff.send(method, *array.slice!(0..index))
-      @diff.same(array.shift)
+    def change(d, method, array, index)
+      d.send(method, *array.slice!(0..index))
+      d.same(array.shift)
     end
   end
 end
+
+
+
